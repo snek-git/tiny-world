@@ -18,7 +18,7 @@
 
 ---------------  S U M M A R Y ------------
 
-Command Line: -agentlib:jdwp=transport=dt_socket,server=n,suspend=y,address=127.0.0.1:55535 -Dfile.encoding=windows-1252 -Duser.country=US -Duser.language=en -Duser.variant SimpleCylinder
+Command Line: -agentlib:jdwp=transport=dt_socket,server=n,suspend=y,address=127.0.0.1:55535 -Dfile.encoding=windows-1252 -Duser.country=US -Duser.language=en -Duser.variant SimpleWorld
 
 Host: AMD Ryzen 7 3700X 8-Core Processor             , 16 cores, 15G,  Windows 11 , 64 bit Build 22000 (10.0.22000.708)
 Time: Sun Dec 11 21:40:04 2022 Caucasus Standard Time elapsed time: 15.313299 seconds (0d 0h 0m 15s)
@@ -35,9 +35,9 @@ Java frames: (J=compiled Java code, j=interpreted, Vv=VM code)
 j  org.lwjgl.opengl.GL11C.nglDrawElements(IIIJ)V+0
 j  org.lwjgl.opengl.GL11C.glDrawElements(IIIJ)V+4
 j  org.lwjgl.opengl.GL11.glDrawElements(IIIJ)V+4
-j  SimpleCylinder.loop()V+838
-j  SimpleCylinder.run()V+5
-j  SimpleCylinder.main([Ljava/lang/String;)V+7
+j  SimpleWorld.loop()V+838
+j  SimpleWorld.run()V+5
+j  SimpleWorld.main([Ljava/lang/String;)V+7
 v  ~StubRoutines::call_stub
 
 siginfo: EXCEPTION_ACCESS_VIOLATION (0xc0000005), reading address 0x0000000000000000
@@ -672,7 +672,7 @@ symbol engine: initialized successfully - sym options: 0x614 - pdb path: .;C:\Us
 
 VM Arguments:
 jvm_args: -agentlib:jdwp=transport=dt_socket,server=n,suspend=y,address=127.0.0.1:55535 -Dfile.encoding=windows-1252 -Duser.country=US -Duser.language=en -Duser.variant 
-java_command: SimpleCylinder
+java_command: SimpleWorld
 java_class_path (initial): E:\AUA\CompGraph\CompGraphProj\build\classes\java\main;E:\AUA\CompGraph\CompGraphProj\build\resources\main;C:\Users\felom\.gradle\caches\modules-2\files-2.1\org.lwjgl\lwjgl-glfw\3.3.1\cbac1b8d30cb4795149c1ef540f912671a8616d0\lwjgl-glfw-3.3.1.jar;C:\Users\felom\.gradle\caches\modules-2\files-2.1\org.lwjgl\lwjgl-glfw\3.3.1\ed892f945cf7e79c8756796f32d00fa4ceaf573b\lwjgl-glfw-3.3.1-natives-windows.jar;C:\Users\felom\.gradle\caches\modules-2\files-2.1\org.lwjgl\lwjgl-opengl\3.3.1\831a5533a21a5f4f81bbc51bb13e9899319b5411\lwjgl-opengl-3.3.1.jar;C:\Users\felom\.gradle\caches\modules-2\files-2.1\org.lwjgl\lwjgl-opengl\3.3.1\c1807e9bd571402787d7e37e3029776ae2513bb8\lwjgl-opengl-3.3.1-natives-windows.jar;C:\Users\felom\.gradle\caches\modules-2\files-2.1\org.lwjgl\lwjgl-stb\3.3.1\b119297cf8ed01f247abe8685857f8e7fcf5980f\lwjgl-stb-3.3.1.jar;C:\Users\felom\.gradle\caches\modules-2\files-2.1\org.lwjgl\lwjgl-stb\3.3.1\86315914ac119efdb02dc9e8e978ade84f1702af\lwjgl-stb-3.3.1-natives-windows.jar;C:\Users\felom\.gradle\caches\modules-2\files-2.1\org.lwjgl\lwjgl\3.3.1\ae58664f88e18a9bb2c77b063833ca7aaec484cb\lwjgl-3.3.1.jar;C:\Users\felom\.gradle\caches\modules-2\files-2.1\org.lwjgl\lwjgl\3.3.1\36c37f16ab611b3aa11f3bcf80b1d509b4ce6b\lwjgl-3.3.1-natives-windows.jar;C:\Users\felom\.gradle\caches\modules-2\files-2.1\org.joml\joml\1.10.4\19cb0a0f0f8a938785ebd5b2a2268ea2e65dabae\joml-1.10.4.jar
 Launcher Type: SUN_STANDARD
 

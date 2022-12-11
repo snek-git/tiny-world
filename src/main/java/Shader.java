@@ -1,6 +1,7 @@
 import org.joml.Matrix4f;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL20;
+import org.lwjgl.opengl.GL32;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -66,6 +67,35 @@ public class Shader {
         // delete the shaders as they're linked into our program now and no longer necessary
         GL20.glDeleteShader(vertexID);
         GL20.glDeleteShader(fragmentID);
+    }
+
+    public Shader(String vertexPath, String fragmentPath, String geometryPath){
+        String vertexSource = ParseShader(vertexPath);
+        String fragmentSource = ParseShader(fragmentPath);
+        String geometrySource = ParseShader(geometryPath);
+
+        int vertexID = CompileShader(GL20.GL_VERTEX_SHADER, vertexSource);
+        int fragmentID = CompileShader(GL20.GL_FRAGMENT_SHADER, fragmentSource);
+        int geometryID = CompileShader(GL32.GL_GEOMETRY_SHADER, geometrySource);
+
+        ID = GL20.glCreateProgram();
+        GL20.glAttachShader(ID, vertexID);
+        GL20.glAttachShader(ID, fragmentID);
+        GL20.glAttachShader(ID, geometryID);
+        GL20.glLinkProgram(ID);
+
+        int success[] = new int[1];
+        GL20.glGetProgramiv(ID, GL20.GL_LINK_STATUS, success);
+        if (success[0] == 0) {
+            String infoLog = GL20.glGetProgramInfoLog(ID, 512);
+            System.out.println("ERROR::SHADER::PROGRAM::LINKING_FAILED\n" + infoLog + "\n");
+        }
+
+        // delete the shaders as they're linked into our program now and no longer necessary
+        GL20.glDeleteShader(vertexID);
+        GL20.glDeleteShader(fragmentID);
+        GL20.glDeleteShader(geometryID);
+
     }
 
     // use/activate the shader

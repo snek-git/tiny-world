@@ -1,5 +1,6 @@
 import org.joml.Vector2f;
 import org.joml.Vector3f;
+import org.lwjgl.BufferUtils;
 import org.lwjgl.glfw.*;
 import org.lwjgl.opengl.*;
 import org.lwjgl.system.*;
@@ -13,7 +14,8 @@ import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.opengl.ARBVertexArrayObject.glBindVertexArray;
 import static org.lwjgl.opengl.ARBVertexArrayObject.glGenVertexArrays;
 import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.opengl.GL20.*;
+import static org.lwjgl.opengl.GL30.glGenerateMipmap;
+import static org.lwjgl.stb.STBImage.*;
 import static org.lwjgl.system.MemoryStack.*;
 import static org.lwjgl.system.MemoryUtil.*;
 
@@ -27,14 +29,21 @@ public class SimpleWorld {
     private long window;
     boolean pressed;
 
-    private int VBO;
+
+    private int VBO_pos;
+    private int VBO_norm;
+    private int VBO_tex;
+
     private Shader shader;
+    private Shader waterShader;
+    private Shader grassShader;
+
+    private float time = 0;
 
     public void run() {
         init();
         loop();
 
-        glDeleteBuffers(VBO);
         shader.dispose();
 
         // Free the window callbacks and destroy the window
@@ -106,6 +115,8 @@ public class SimpleWorld {
         glfwShowWindow(window);
     }
 
+
+
     private void loop() {
         // This line is critical for LWJGL's interoperation with GLFW's
         // OpenGL context, or any context that is managed externally.
@@ -113,14 +124,6 @@ public class SimpleWorld {
         // creates the GLCapabilities instance and makes the OpenGL
         // bindings available for use.
         GL.createCapabilities();
-
-/*        glEnable(GL_CULL_FACE);
-	    glCullFace(GL_BACK);
-	    glFrontFace(GL_CW);*/
-
-        glEnable(GL_DEPTH_TEST);
-
-
 
         // Get the thread stack and push a new frame
         try (MemoryStack stack = stackPush()) {
@@ -135,57 +138,40 @@ public class SimpleWorld {
         });
 
         shader = new Shader("src/shaders/vertex.shader", "src/shaders/fragment.shader");
+        waterShader = new Shader("src/shaders/water_vertex.shader", "src/shaders/water_fragment.shader");
+        grassShader = new Shader("src/shaders/vertex.shader", "src/shaders/grass_fragment.shader", "src/shaders/grass_geometry.shader");
 
-        final Matrix4f camera = new Matrix4f();
+        Matrix4f view = new Matrix4f();
         final Vector3f cameraPos = new Vector3f(0.0f, 2.0f, 3.0f);
-        final Vector3f cameraFront = new Vector3f(0.0f, 0.5f, 0.0f);
+        final Vector3f cameraFront = new Vector3f(0.0f, -1.0f, 0.0f);
         final Vector3f cameraUp = new Vector3f(0.0f, 1.0f, 0.0f);
 
-        // set up vertex data (and buffer(s)) and configure vertex attributes
-        // ------------------------------------------------------------------
-        float vertices[] = {
-                -0.5f,  0.5f, 0.0f, 0.0f, 0.0f,0.0f,
-                0.5f,  -0.5f, 0.0f, 0.0f, 0.0f,0.0f,
-                -0.5f,  -0.5f, 0.0f, 0.0f, 0.0f,0.0f,
-
-                -0.5f,  0.5f,0.0f, 0.0f, 0.0f,0.0f,
-                0.5f,  0.5f,0.0f, 0.0f, 0.0f,0.0f,
-                0.5f,  -0.5f,0.0f, 0.0f, 0.0f,0.0f
-        };
-
-
-        // rendering the top of the cylinder
-
-//        float[] vertices = new float[600];
-        float[] indices = new float[600];
-
-
-        Matrix4f model = new Matrix4f();
-        Matrix4f projection = new Matrix4f();
+        Surface terrain = new Surface(loadTexture("grass.png"), loadTexture("grass_heightmap.png"));
 
         int VAO = glGenVertexArrays();
         glBindVertexArray(VAO);
 
-        VBO = glGenBuffers();
-        glBindBuffer(GL_ARRAY_BUFFER, VBO);
-        glBufferData(GL_ARRAY_BUFFER, vertices, GL_STATIC_DRAW);
+        bindIndicesBuffer(terrain.getIndices());
+        storeDataInAttributeList(0, 3, terrain.getVertices());
+        storeDataInAttributeList(1, 2, terrain.getTextureCoords());
+        storeDataInAttributeList(2, 3, terrain.getNormals());
 
-        int INB = glGenBuffers();
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, INB);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices, GL_STATIC_DRAW);
+        GL30.glBindVertexArray(0);
 
-//        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        Water water = new Water(loadTexture("water.png"));
 
-        //position
-        glVertexAttribPointer(0, 3, GL_FLOAT, false, 4 * 6, 0);
-        glEnableVertexAttribArray(0);
+        int VAO_water = glGenVertexArrays();
+        glBindVertexArray(VAO_water);
 
-        //normal
-        glVertexAttribPointer(1, 3, GL_FLOAT, false, 4 * 6, 3 * 4);
-        glEnableVertexAttribArray(1);
+        bindIndicesBuffer(water.getIndices());
+        storeDataInAttributeList(0, 3, water.getVertices());
+        storeDataInAttributeList(1, 2, water.getTextureCoords());
+        storeDataInAttributeList(2, 3, water.getNormals());
 
-        // glBindBuffer(GL_ARRAY_BUFFER, 0);
-        shader.use();
+        GL30.glBindVertexArray(0);
+
+        Matrix4f model = new Matrix4f();
+        Matrix4f projection = new Matrix4f();
 
         GLFW.glfwSetScrollCallback(window, new GLFWScrollCallback() {
             @Override public void invoke (long win, double dx, double dy) {
@@ -193,80 +179,166 @@ public class SimpleWorld {
             }
         });
 
-        double angleX = Math.toRadians(45), angleY = Math.toRadians(60);
+        double yaw = Math.toRadians(-90), pitch = Math.toRadians(0);
         final double[] xPos = new double[1];
         final double[] yPos = new double[1];
-        final Vector2f lastMousePos = new Vector2f();
+        final Vector2f mousePos = new Vector2f();
+        final Vector2f mouseDelta = new Vector2f();
 
         GLFW.glfwSetMouseButtonCallback(window, new GLFWMouseButtonCallback() {
             @Override
             public void invoke(long window, int button, int action, int mods) {
                 pressed = action == 1;
-                glfwGetCursorPos(window, xPos, yPos);
-                lastMousePos.x = (float) xPos[0];
-                lastMousePos.y = (float) yPos[0];
             }
         });
+
+        glfwSetCursorPosCallback(window, new GLFWCursorPosCallback() {
+            @Override
+            public void invoke(long window, double xpos, double ypos) {
+                float xposf = (float) xpos;
+                float yposf = (float) ypos;
+                mouseDelta.set(xposf, yposf).sub(mousePos);
+                mouseDelta.x = Math.max(-100.0f, Math.min(100.0f, mouseDelta.x));
+                mouseDelta.y = Math.max(-100.0f, Math.min(100.0f, mouseDelta.y));
+                mousePos.set(xposf, yposf);
+            }
+        });
+
 
         // Run the rendering loop until the user has attempted to close
         // the window or has pressed the ESCAPE key.
 
         while (!glfwWindowShouldClose(window)) {
+            time += glfwGetTime();
             // set the view matrix
-            projection.identity();
-            projection.perspective((float) Math.toRadians(45.0f), SCREEN_WIDTH / SCREEN_HEIGHT, 0.1f, 100.0f);
 
-            float cameraSpeed = 0.05f;
+//            lookAt.rotate(0.01f, new Vector3f(0, 1, 0));
+
+            float mouseSensitivity = 0.001f;
+            float cameraSpeed = 0.02f;
 
             if(glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-                cameraPos.add(cameraFront.mul(cameraSpeed));
+                cameraPos.add(new Vector3f(cameraFront).mul(cameraSpeed));
             if(glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-                cameraPos.sub(cameraFront.mul(cameraSpeed));
+                cameraPos.sub(new Vector3f(cameraFront).mul(cameraSpeed));
             if(glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-                cameraPos.add(cameraFront.cross(cameraUp).mul(cameraSpeed));
+                cameraPos.add(new Vector3f(cameraFront).cross(cameraUp).normalize().mul(cameraSpeed));
             if(glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-                cameraPos.sub(cameraFront.cross(cameraUp).mul(cameraSpeed));
+                cameraPos.sub(new Vector3f(cameraFront).cross(cameraUp).normalize().mul(cameraSpeed));
 
             if (pressed) {
-                glfwGetCursorPos(window, xPos, yPos);
-                double x = lastMousePos.x - xPos[0];
-                double y = lastMousePos.y - yPos[0];
-                double changedX = x / SCREEN_WIDTH * 2 * Math.PI;
-                double changedY = y / SCREEN_HEIGHT * 2 * Math.PI;
-                lastMousePos.x = (float) xPos[0];
-                lastMousePos.y = (float) yPos[0];
 
-                angleX += changedX;
-                angleY += changedY;
+                yaw += mouseDelta.x * mouseSensitivity;
+                pitch += mouseDelta.y * mouseSensitivity;
+
+                if (pitch > (float) Math.toRadians(89.0f))
+                    pitch = (float) Math.toRadians(89.0f);
+                if (pitch < (float) Math.toRadians(-89.0f))
+                    pitch = (float) Math.toRadians(-89.0f);
             }
 
             // update camera
             cameraFront.set(
-                    (float) (CAMERA_RADIUS * Math.sin(angleY) * Math.cos(angleX)),
-                    (float) (CAMERA_RADIUS * Math.cos(angleY)),
-                    (float) (CAMERA_RADIUS * Math.sin(angleY) * Math.sin(angleX))
+                    (float) ( Math.cos(pitch) * Math.cos(yaw)),
+                    (float) ( Math.sin(pitch)),
+                    (float) ( Math.cos(pitch) * Math.sin(yaw))
             );
+            cameraFront.normalize();
 
-            camera.identity();
-            camera.lookAt(cameraPos, cameraFront, cameraUp);
+            mouseDelta.zero();
 
+            view.identity();
+            view.lookAt(cameraPos, new Vector3f(cameraPos).add(cameraFront), cameraUp);
+            projection.identity();
+            projection.perspective((float) Math.toRadians(45.0f), SCREEN_WIDTH / SCREEN_HEIGHT, 0.1f, 100.0f);
             // Set the clear color
-            glClearColor(.2f, .4f, .7f, .4f);
+            glClearColor(.2f, .4f, .7f, 1f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // clear the framebuffer
+            GL11.glPolygonMode(GL11.GL_FRONT_AND_BACK, GL_FILL);
+            GL11.glEnable(GL11.GL_DEPTH_TEST);
+            GL11.glCullFace(GL11.GL_BACK);
+            GL11.glEnable(GL11.GL_CULL_FACE);
+            GL11.glEnable(GL11.GL_BLEND);
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
             model.identity();
 
+            // render terrain
             shader.use();
-
             shader.setMatrix("model", model);
-            shader.setMatrix("view", camera);
+            shader.setMatrix("view", view);
             shader.setMatrix("projection", projection);
 
-
-            shader.setVec3("objectColor", 1.0f, 0.5f, 0.31f);
             shader.setVec3("lightColor", 1.0f, 1.0f, 1.0f);
-            shader.setVec3("lightPos", (float) (Math.sin(glfwGetTime()) * 2.0f), 2.0f, (float) (Math.cos(glfwGetTime()) * 2.0f));
+            shader.setVec3("lightDir", 2.0f, 2.0f, 2.0f);
             shader.setVec3("viewPos", 2.0f, 2.0f, 2.0f);
+
+            shader.setInt("texture1", 0);
+            shader.setInt("texture2", 1);
+
+            GL30.glBindVertexArray(VAO);
+            GL20.glEnableVertexAttribArray(0);
+            GL20.glEnableVertexAttribArray(1);
+            GL20.glEnableVertexAttribArray(2);
+
+            GL13.glActiveTexture(GL13.GL_TEXTURE0);
+            GL11.glBindTexture(GL11.GL_TEXTURE_2D, terrain.getTexture());
+
+            GL13.glActiveTexture(GL13.GL_TEXTURE1);
+            GL11.glBindTexture(GL11.GL_TEXTURE_2D, terrain.getHeightmap());
+
+            glDrawElements(GL_TRIANGLE_STRIP, terrain.getIndices().length , GL_UNSIGNED_INT, 0);
+
+            // render water
+            waterShader.use();
+            waterShader.setMatrix("model", model);
+            waterShader.setMatrix("view", view);
+            waterShader.setMatrix("projection", projection);
+
+            waterShader.setVec3("lightColor", 1.0f, 1.0f, 1.0f);
+            waterShader.setVec3("lightDir", 2.0f, 2.0f, 2.0f);
+            waterShader.setVec3("viewPos", 2.0f, 2.0f, 2.0f);
+
+            waterShader.setFloat("waterDisplacement", time);
+
+            waterShader.setInt("texture1", 0);
+
+            GL30.glBindVertexArray(VAO_water);
+            GL20.glEnableVertexAttribArray(0);
+            GL20.glEnableVertexAttribArray(1);
+            GL20.glEnableVertexAttribArray(2);
+
+            GL13.glActiveTexture(GL13.GL_TEXTURE0);
+            GL11.glBindTexture(GL11.GL_TEXTURE_2D, water.getTexture());
+
+            glDrawElements(GL_TRIANGLE_STRIP, water.getIndices().length , GL_UNSIGNED_INT, 0);
+
+            grassShader.use();
+            grassShader.setMatrix("model", model);
+            grassShader.setMatrix("view", view);
+            grassShader.setMatrix("projection", projection);
+
+            grassShader.setVec3("lightColor", 1.0f, 1.0f, 1.0f);
+            grassShader.setVec3("lightDir", 2.0f, 2.0f, 2.0f);
+            grassShader.setVec3("viewPos", 2.0f, 2.0f, 2.0f);
+
+            grassShader.setInt("texture1", 0);
+            grassShader.setInt("texture", 0);
+
+            GL30.glBindVertexArray(VAO);
+            GL20.glEnableVertexAttribArray(0);
+            GL20.glEnableVertexAttribArray(1);
+            GL20.glEnableVertexAttribArray(2);
+
+            GL13.glActiveTexture(GL13.GL_TEXTURE0);
+            GL11.glBindTexture(GL11.GL_TEXTURE_2D, terrain.getTexture());
+
+            GL13.glActiveTexture(GL13.GL_TEXTURE1);
+            GL11.glBindTexture(GL11.GL_TEXTURE_2D, terrain.getHeightmap());
+
+            glDrawElements(GL_TRIANGLE_STRIP, terrain.getIndices().length , GL_UNSIGNED_INT, 0);
+
+
 
 
             glfwSwapBuffers(window); // swap the color buffers
@@ -277,13 +349,70 @@ public class SimpleWorld {
         }
     }
 
-    public static void main(String[] args) {
-        new SimpleWorld().run();
+    private void storeDataInAttributeList(int attributeNumber, int coordinateSize,float[] data) {
+        int vboID = GL15.glGenBuffers();
+
+        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vboID);
+        FloatBuffer buffer = storeDataInFloatBuffer(data);
+        GL15.glBufferData(GL15.GL_ARRAY_BUFFER, buffer, GL15.GL_STATIC_DRAW);
+        GL20.glVertexAttribPointer(attributeNumber,coordinateSize,GL11.GL_FLOAT,false,0,0);
+        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
+    }
+
+    private FloatBuffer storeDataInFloatBuffer(float[] data) {
+        FloatBuffer buffer = BufferUtils.createFloatBuffer(data.length);
+        buffer.put(data);
+        buffer.flip();
+        return buffer;
+    }
+
+    private void bindIndicesBuffer(int[] indices) {
+        int vboID = GL15.glGenBuffers();
+        GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, vboID);
+        IntBuffer buffer = storeDataInIntBuffer(indices);
+        GL15.glBufferData(GL15.GL_ELEMENT_ARRAY_BUFFER, buffer, GL15.GL_STATIC_DRAW);
+    }
+
+    private IntBuffer storeDataInIntBuffer(int[] data) {
+        IntBuffer buffer = BufferUtils.createIntBuffer(data.length);
+        buffer.put(data);
+        buffer.flip();
+        return buffer;
+    }
+
+    public int loadTexture(String fileName) {
+        stbi_set_flip_vertically_on_load(true);
+
+        int texture = glGenTextures();
+        glBindTexture(GL_TEXTURE_2D, texture); // all upcoming GL_TEXTURE_2D operations now have effect on this texture object
+        // set the texture wrapping parameters
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        // set texture filtering parameters
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        // load image, create texture and generate mipmaps
+        try (MemoryStack stack = stackPush()) {
+            IntBuffer w    = stack.mallocInt(1);
+            IntBuffer h    = stack.mallocInt(1);
+            IntBuffer nrChannels = stack.mallocInt(1);
+
+            ByteBuffer data = stbi_load("src/assets/" + fileName, w, h, nrChannels, 0);
+            if (data != null) {
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w.get(0), h.get(0), 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+                glGenerateMipmap(GL_TEXTURE_2D);
+            } else {
+                System.out.println("Failed to load texture " + fileName);
+            }
+            stbi_image_free(data);
+        }
+
+        return texture;
     }
 
 
-
-
-
+    public static void main(String[] args) {
+        new SimpleWorld().run();
+    }
 
 }
