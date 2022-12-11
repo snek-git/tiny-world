@@ -139,14 +139,17 @@ public class SimpleWorld {
 
         shader = new Shader("src/shaders/vertex.shader", "src/shaders/fragment.shader");
         waterShader = new Shader("src/shaders/water_vertex.shader", "src/shaders/water_fragment.shader");
-        grassShader = new Shader("src/shaders/vertex.shader", "src/shaders/grass_fragment.shader", "src/shaders/grass_geometry.shader");
+        grassShader = new Shader("src/shaders/grass_vertex.shader", "src/shaders/grass_fragment.shader", "src/shaders/grass_geometry.shader");
 
         Matrix4f view = new Matrix4f();
         final Vector3f cameraPos = new Vector3f(0.0f, 2.0f, 3.0f);
         final Vector3f cameraFront = new Vector3f(0.0f, -1.0f, 0.0f);
         final Vector3f cameraUp = new Vector3f(0.0f, 1.0f, 0.0f);
 
-        Surface terrain = new Surface(loadTexture("grass.png"), loadTexture("grass_heightmap.png"));
+        Surface terrain = new Surface(loadTexture("grass.png", GL_RGB), loadTexture("grass_heightmap.png", GL_RGB));
+
+        int grassTexture = loadTexture("GrassDiffuse.png", GL_RGBA);
+        int grassDistribution = loadTexture("GrassDistribution.png", GL_RGB);
 
         int VAO = glGenVertexArrays();
         glBindVertexArray(VAO);
@@ -158,7 +161,7 @@ public class SimpleWorld {
 
         GL30.glBindVertexArray(0);
 
-        Water water = new Water(loadTexture("water.png"));
+        Water water = new Water(loadTexture("water.png", GL_RGB));
 
         int VAO_water = glGenVertexArrays();
         glBindVertexArray(VAO_water);
@@ -289,6 +292,9 @@ public class SimpleWorld {
 
             glDrawElements(GL_TRIANGLE_STRIP, terrain.getIndices().length , GL_UNSIGNED_INT, 0);
 
+            glDisable(GL_CULL_FACE);
+
+
             // render water
             waterShader.use();
             waterShader.setMatrix("model", model);
@@ -313,6 +319,7 @@ public class SimpleWorld {
 
             glDrawElements(GL_TRIANGLE_STRIP, water.getIndices().length , GL_UNSIGNED_INT, 0);
 
+
             grassShader.use();
             grassShader.setMatrix("model", model);
             grassShader.setMatrix("view", view);
@@ -322,21 +329,23 @@ public class SimpleWorld {
             grassShader.setVec3("lightDir", 2.0f, 2.0f, 2.0f);
             grassShader.setVec3("viewPos", 2.0f, 2.0f, 2.0f);
 
-            grassShader.setInt("texture1", 0);
-            grassShader.setInt("texture", 0);
+            grassShader.setInt("texture2", 1);
+            grassShader.setInt("grassTexture", 2);
+            grassShader.setInt("grassDistr", 3);
 
-            GL30.glBindVertexArray(VAO);
-            GL20.glEnableVertexAttribArray(0);
-            GL20.glEnableVertexAttribArray(1);
-            GL20.glEnableVertexAttribArray(2);
+            grassShader.setFloat("size", 0.14f);
 
-            GL13.glActiveTexture(GL13.GL_TEXTURE0);
-            GL11.glBindTexture(GL11.GL_TEXTURE_2D, terrain.getTexture());
 
-            GL13.glActiveTexture(GL13.GL_TEXTURE1);
-            GL11.glBindTexture(GL11.GL_TEXTURE_2D, terrain.getHeightmap());
+            GL13.glActiveTexture(GL13.GL_TEXTURE2);
+            GL11.glBindTexture(GL11.GL_TEXTURE_2D, grassTexture);
+
+            GL13.glActiveTexture(GL13.GL_TEXTURE3);
+            GL11.glBindTexture(GL11.GL_TEXTURE_2D, grassDistribution);
 
             glDrawElements(GL_TRIANGLE_STRIP, terrain.getIndices().length , GL_UNSIGNED_INT, 0);
+
+            glEnable(GL_CULL_FACE);
+
 
 
 
@@ -380,7 +389,7 @@ public class SimpleWorld {
         return buffer;
     }
 
-    public int loadTexture(String fileName) {
+    public int loadTexture(String fileName, int rgb) {
         stbi_set_flip_vertically_on_load(true);
 
         int texture = glGenTextures();
@@ -399,7 +408,7 @@ public class SimpleWorld {
 
             ByteBuffer data = stbi_load("src/assets/" + fileName, w, h, nrChannels, 0);
             if (data != null) {
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w.get(0), h.get(0), 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+                glTexImage2D(GL_TEXTURE_2D, 0, rgb, w.get(0), h.get(0), 0, rgb, GL_UNSIGNED_BYTE, data);
                 glGenerateMipmap(GL_TEXTURE_2D);
             } else {
                 System.out.println("Failed to load texture " + fileName);
