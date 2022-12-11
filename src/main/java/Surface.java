@@ -23,7 +23,7 @@ public class Surface {
     }
 
     public int getSize() {
-        return size;
+        return indices.length;
     }
 
     public float[] getNormals() {
@@ -145,7 +145,7 @@ public class Surface {
 //        return indices;
 //    }
     private static final float SIZE = 4;
-    private static final int DIVISIONS = 128;
+    private static final int DIVISIONS = 3;
 
     private void generateTerrain(){
         int vertices_size = (DIVISIONS + 1) * (DIVISIONS + 1);

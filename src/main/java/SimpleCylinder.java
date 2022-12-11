@@ -1,5 +1,6 @@
 import org.joml.Vector2f;
 import org.joml.Vector3f;
+import org.lwjgl.BufferUtils;
 import org.lwjgl.glfw.*;
 import org.lwjgl.opengl.*;
 import org.lwjgl.system.*;
@@ -256,30 +257,37 @@ public class SimpleCylinder {
 //            indices[indexOffset + i] = northIndices[i];
 //        }
 //
-
-
-
         Surface terrain = new Surface(5, 3, 400);
 
 
         int VAO = glGenVertexArrays();
         glBindVertexArray(VAO);
 
-        VBO_pos = glGenBuffers();
-        glBindBuffer(GL_ARRAY_BUFFER, VBO_pos);
-        glBufferData(GL_ARRAY_BUFFER, terrain.getVertices(), GL_STATIC_DRAW);
+        storeDataInAttributeList(0, 3, terrain.getVertices());
 
-        VBO_norm = glGenBuffers();
-        glBindBuffer(GL_ARRAY_BUFFER, VBO_norm);
-        glBufferData(GL_ARRAY_BUFFER, terrain.getNormals(), GL_STATIC_DRAW);
+        storeDataInAttributeList(1, 2, terrain.getTextureCoords());
 
-        VBO_tex = glGenBuffers();
-        glBindBuffer(GL_ARRAY_BUFFER, VBO_tex);
-        glBufferData(GL_ARRAY_BUFFER, terrain.getTextureCoords(), GL_STATIC_DRAW);
+        storeDataInAttributeList(2, 3, terrain.getNormals());
 
-        int INB = glGenBuffers();
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, INB);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, terrain.getIndices(), GL_STATIC_DRAW);
+        GL30.glBindVertexArray(0);
+//
+//        VBO_pos = glGenBuffers();
+//        glBindBuffer(GL_ARRAY_BUFFER, VBO_pos);
+//        glBufferData(GL_ARRAY_BUFFER, terrain.getVertices(), GL_STATIC_DRAW);
+//
+//        VBO_norm = glGenBuffers();
+//        glBindBuffer(GL_ARRAY_BUFFER, VBO_norm);
+//        glBufferData(GL_ARRAY_BUFFER, terrain.getNormals(), GL_STATIC_DRAW);
+//
+//        VBO_tex = glGenBuffers();
+//        glBindBuffer(GL_ARRAY_BUFFER, VBO_tex);
+//        glBufferData(GL_ARRAY_BUFFER, terrain.getTextureCoords(), GL_STATIC_DRAW);
+//
+//        int INB = glGenBuffers();
+//        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, INB);
+//        glBufferData(GL_ELEMENT_ARRAY_BUFFER, terrain.getIndices(), GL_STATIC_DRAW);
+
+
 
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
@@ -287,15 +295,17 @@ public class SimpleCylinder {
         Matrix4f projection = new Matrix4f();
 
         //position
-        glVertexAttribPointer(0, 3, GL_FLOAT, false, 4 * 8, 0);
-        glEnableVertexAttribArray(0);
+//        glVertexAttribPointer(0, 3, GL_FLOAT, false, 4 * 8, 0);
+//        glEnableVertexAttribArray(0);
+//
+//        //uv
+//        glVertexAttribPointer(1, 2, GL_FLOAT, false, 4 * 8, 3 * 4);
+//        glEnableVertexAttribArray(1);
+//        //normal
+//        glVertexAttribPointer(2, 3, GL_FLOAT, false, 4 * 8, 5 * 4);
+//        glEnableVertexAttribArray(2);
 
-        //uv
-        glVertexAttribPointer(1, 2, GL_FLOAT, false, 4 * 8, 3 * 4);
-        glEnableVertexAttribArray(1);
-        //normal
-        glVertexAttribPointer(2, 3, GL_FLOAT, false, 4 * 8, 5 * 4);
-        glEnableVertexAttribArray(2);
+
 
         // glBindBuffer(GL_ARRAY_BUFFER, 0);
         shader.use();
@@ -390,9 +400,19 @@ public class SimpleCylinder {
             shader.setVec3("lightPos", (float) (Math.sin(glfwGetTime()) * 2.0f), 2.0f, (float) (Math.cos(glfwGetTime()) * 2.0f));
             shader.setVec3("viewPos", 2.0f, 2.0f, 2.0f);
 
-            int offset = 0;
 
-            glDrawElements(GL_TRIANGLE_STRIP, terrain.getSize() , GL_UNSIGNED_INT, 0);
+            GL30.glBindVertexArray(VAO);
+            GL20.glEnableVertexAttribArray(0);
+            GL20.glEnableVertexAttribArray(1);
+            GL20.glEnableVertexAttribArray(2);
+//            Texture texture = terrain.getTexture();
+//            shader.loadShineVariables(texture.getShininess(), texture.getSpecularStrength());
+//            GL13.glActiveTexture(GL13.GL_TEXTURE0);
+//            GL11.glBindTexture(GL11.GL_TEXTURE_2D, texture.getID());
+//            Texture heightMap = terrain.getHeightMap();
+//            GL13.glActiveTexture(GL13.GL_TEXTURE1);
+//            GL11.glBindTexture(GL11.GL_TEXTURE_2D, heightMap.getID());
+//            glDrawElements(GL_TRIANGLE_STRIP, terrain.getSize() , GL_UNSIGNED_INT, 0);
 
             glfwSwapBuffers(window); // swap the color buffers
 
@@ -469,6 +489,13 @@ public class SimpleCylinder {
         GL15.glBufferData(GL15.GL_ARRAY_BUFFER, buffer, GL15.GL_STATIC_DRAW);
         GL20.glVertexAttribPointer(attributeNumber,coordinateSize,GL11.GL_FLOAT,false,0,0);
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
+    }
+
+    private FloatBuffer storeDataInFloatBuffer(float[] data) {
+        FloatBuffer buffer = BufferUtils.createFloatBuffer(data.length);
+        buffer.put(data);
+        buffer.flip();
+        return buffer;
     }
 
 }
