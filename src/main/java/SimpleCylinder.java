@@ -27,14 +27,17 @@ public class SimpleCylinder {
     private long window;
     boolean pressed;
 
-    private int VBO;
+
+    private int VBO_pos;
+    private int VBO_norm;
+    private int VBO_tex;
+
     private Shader shader;
 
     public void run() {
         init();
         loop();
 
-        glDeleteBuffers(VBO);
         shader.dispose();
 
         // Free the window callbacks and destroy the window
@@ -106,6 +109,8 @@ public class SimpleCylinder {
         glfwShowWindow(window);
     }
 
+
+
     private void loop() {
         // This line is critical for LWJGL's interoperation with GLFW's
         // OpenGL context, or any context that is managed externally.
@@ -136,9 +141,9 @@ public class SimpleCylinder {
 
         shader = new Shader("src/shaders/vertex.shader", "src/shaders/fragment.shader");
 
-        final Matrix4f camera = new Matrix4f();
+        Matrix4f view = new Matrix4f();
         final Vector3f cameraPos = new Vector3f(0.0f, 2.0f, 3.0f);
-        final Vector3f cameraFront = new Vector3f(0.0f, 0.5f, 0.0f);
+        final Vector3f cameraFront = new Vector3f(0.0f, -1.0f, 0.0f);
         final Vector3f cameraUp = new Vector3f(0.0f, 1.0f, 0.0f);
 
         // set up vertex data (and buffer(s)) and configure vertex attributes
@@ -156,126 +161,141 @@ public class SimpleCylinder {
         // rendering the top of the cylinder
 
 
-        int segmentCount = 3;
-        int sectorCount = 20;
-        float radius = .5f;
+//        int segmentCount = 3;
+//        int sectorCount = 20;
+//        float radius = .5f;
+//
+//
+//        int fanIndicesCount = sectorCount + 2;
+//        int stripIndicesCount = 2 * sectorCount + 2;
+//
+//        int indicesSize = segmentCount * stripIndicesCount + 2 * fanIndicesCount;
+//        int verticesSize = ((segmentCount + 2) * sectorCount + 2 ) * 6;
+//
+//
+//        int southCenterIndex = (verticesSize - 2 * 6);
+//        int northCenterIndex = verticesSize - 6;
+//
+//        float[] vertices = new float[verticesSize];
+//
+//        int verticesOffset = 0;
+
+//        for (int i = 0; i < segmentCount; i++) {
+//            float[] segmentVertices = getCircleVertices(sectorCount, radius, -.5f + (float)i/(segmentCount-1));
+//
+//
+//
+//            for (int k = 0; k < segmentVertices.length; k++) {
+//                vertices[k + verticesOffset] = segmentVertices[k];
+//            }
+//            verticesOffset += segmentVertices.length;
+//
+//        }
+//
+//
+//        float[] southVertices = getCircleVertices(sectorCount, radius, -.5f);
+//        float[] northVertices = getCircleVertices(sectorCount, radius, .5f);
 
 
-        int fanIndicesCount = sectorCount + 2;
-        int stripIndicesCount = 2 * sectorCount + 2;
+//        for (int i = 0; i < southVertices.length; i++) {
+//            vertices[i+verticesOffset] = southVertices[i];
+//        }
+//
+//        verticesOffset += southVertices.length;
+//
+//        for (int i = 0; i < northVertices.length; i++) {
+//            vertices[i + verticesOffset] = northVertices[i];
+//        }
+//
 
-        int indicesSize = segmentCount * stripIndicesCount + 2 * fanIndicesCount;
-        int verticesSize = ((segmentCount + 2) * sectorCount + 2 ) * 6;
+//        //setting south center vertex values
+//        vertices[southCenterIndex] = 0;
+//        vertices[southCenterIndex + 1] = -.5f;
+//        vertices[southCenterIndex + 2] = 0;
+//        vertices[southCenterIndex + 3] = 0;
+//        vertices[southCenterIndex + 4] = -1;
+//        vertices[southCenterIndex + 5] = 0;
+//
+//        //setting north center vertex values
+//        vertices[northCenterIndex] = 0;
+//        vertices[northCenterIndex + 1] = .5f;
+//        vertices[northCenterIndex + 2] = 0;
+//        vertices[northCenterIndex + 3] = 0;
+//        vertices[northCenterIndex + 4] = 1;
+//        vertices[northCenterIndex + 5] = 0;
+//
+//
+//        int[] indices = new int[indicesSize];
+//
+//        int indexOffset = 0;
 
-
-        int southCenterIndex = (verticesSize - 2 * 6);
-        int northCenterIndex = verticesSize - 6;
-
-        float[] vertices = new float[verticesSize];
-
-        int verticesOffset = 0;
-
-        for (int i = 0; i < segmentCount; i++) {
-            float[] segmentVertices = getCircleVertices(sectorCount, radius, -.5f + (float)i/(segmentCount-1));
-
-
-
-            for (int k = 0; k < segmentVertices.length; k++) {
-                vertices[k + verticesOffset] = segmentVertices[k];
-            }
-            verticesOffset += segmentVertices.length;
-
-        }
-
-
-        float[] southVertices = getCircleVertices(sectorCount, radius, -.5f);
-        float[] northVertices = getCircleVertices(sectorCount, radius, .5f);
-
-
-        for (int i = 0; i < southVertices.length; i++) {
-            vertices[i+verticesOffset] = southVertices[i];
-        }
-
-        verticesOffset += southVertices.length;
-
-        for (int i = 0; i < northVertices.length; i++) {
-            vertices[i + verticesOffset] = northVertices[i];
-        }
-
-
-        //setting south center vertex values
-        vertices[southCenterIndex] = 0;
-        vertices[southCenterIndex + 1] = -.5f;
-        vertices[southCenterIndex + 2] = 0;
-        vertices[southCenterIndex + 3] = 0;
-        vertices[southCenterIndex + 4] = -1;
-        vertices[southCenterIndex + 5] = 0;
-
-        //setting north center vertex values
-        vertices[northCenterIndex] = 0;
-        vertices[northCenterIndex + 1] = .5f;
-        vertices[northCenterIndex + 2] = 0;
-        vertices[northCenterIndex + 3] = 0;
-        vertices[northCenterIndex + 4] = 1;
-        vertices[northCenterIndex + 5] = 0;
+//        for (int i = 0; i < segmentCount; i++) {
+//            int[] stripIndices = getStripIndices(sectorCount, i * sectorCount, (i+1) * sectorCount);
+//
+//
+//            for (int k = 0; k < stripIndices.length; k++) {
+//                indices[k + indexOffset] = stripIndices[k];
+//            }
+//            indexOffset += stripIndices.length;
+//
+//        }
+//
+//
+//
+//        int[] southIndices = getFanIndices(sectorCount, southCenterIndex/6 , (segmentCount) * sectorCount);
+//        int[] northIndices = getFanIndices(sectorCount, northCenterIndex/6 , (segmentCount+1) * sectorCount);
 
 
-        int[] indices = new int[indicesSize];
-
-        int indexOffset = 0;
-
-        for (int i = 0; i < segmentCount; i++) {
-            int[] stripIndices = getStripIndices(sectorCount, i * sectorCount, (i+1) * sectorCount);
-
-
-            for (int k = 0; k < stripIndices.length; k++) {
-                indices[k + indexOffset] = stripIndices[k];
-            }
-            indexOffset += stripIndices.length;
-
-        }
+//        for (int i = 0; i < southIndices.length; i++) {
+//            indices[i + indexOffset] = southIndices[i];
+//        }
+//
+//        indexOffset += southIndices.length;
+//
+//        for (int i = 0; i < northIndices.length; i++) {
+//            indices[indexOffset + i] = northIndices[i];
+//        }
+//
 
 
 
-        int[] southIndices = getFanIndices(sectorCount, southCenterIndex/6 , (segmentCount) * sectorCount);
-        int[] northIndices = getFanIndices(sectorCount, northCenterIndex/6 , (segmentCount+1) * sectorCount);
+        Surface terrain = new Surface(5, 3, 400);
 
-
-        for (int i = 0; i < southIndices.length; i++) {
-            indices[i + indexOffset] = southIndices[i];
-        }
-
-        indexOffset += southIndices.length;
-
-        for (int i = 0; i < northIndices.length; i++) {
-            indices[indexOffset + i] = northIndices[i];
-        }
-
-
-
-        Matrix4f model = new Matrix4f();
-        Matrix4f projection = new Matrix4f();
 
         int VAO = glGenVertexArrays();
         glBindVertexArray(VAO);
 
-        VBO = glGenBuffers();
-        glBindBuffer(GL_ARRAY_BUFFER, VBO);
-        glBufferData(GL_ARRAY_BUFFER, vertices, GL_STATIC_DRAW);
+        VBO_pos = glGenBuffers();
+        glBindBuffer(GL_ARRAY_BUFFER, VBO_pos);
+        glBufferData(GL_ARRAY_BUFFER, terrain.getVertices(), GL_STATIC_DRAW);
+
+        VBO_norm = glGenBuffers();
+        glBindBuffer(GL_ARRAY_BUFFER, VBO_norm);
+        glBufferData(GL_ARRAY_BUFFER, terrain.getNormals(), GL_STATIC_DRAW);
+
+        VBO_tex = glGenBuffers();
+        glBindBuffer(GL_ARRAY_BUFFER, VBO_tex);
+        glBufferData(GL_ARRAY_BUFFER, terrain.getTextureCoords(), GL_STATIC_DRAW);
 
         int INB = glGenBuffers();
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, INB);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices, GL_STATIC_DRAW);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, terrain.getIndices(), GL_STATIC_DRAW);
 
-//        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
+        Matrix4f model = new Matrix4f();
+        Matrix4f projection = new Matrix4f();
 
         //position
-        glVertexAttribPointer(0, 3, GL_FLOAT, false, 4 * 6, 0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, false, 4 * 8, 0);
         glEnableVertexAttribArray(0);
 
-        //normal
-        glVertexAttribPointer(1, 3, GL_FLOAT, false, 4 * 6, 3 * 4);
+        //uv
+        glVertexAttribPointer(1, 2, GL_FLOAT, false, 4 * 8, 3 * 4);
         glEnableVertexAttribArray(1);
+        //normal
+        glVertexAttribPointer(2, 3, GL_FLOAT, false, 4 * 8, 5 * 4);
+        glEnableVertexAttribArray(2);
 
         // glBindBuffer(GL_ARRAY_BUFFER, 0);
         shader.use();
@@ -287,7 +307,7 @@ public class SimpleCylinder {
             }
         });
 
-        double angleX = Math.toRadians(45), angleY = Math.toRadians(60);
+        double yaw = Math.toRadians(-90), pitch = Math.toRadians(0);
         final double[] xPos = new double[1];
         final double[] yPos = new double[1];
         final Vector2f lastMousePos = new Vector2f();
@@ -307,45 +327,51 @@ public class SimpleCylinder {
 
         while (!glfwWindowShouldClose(window)) {
             // set the view matrix
-            projection.identity();
-            projection.perspective((float) Math.toRadians(45.0f), SCREEN_WIDTH / SCREEN_HEIGHT, 0.1f, 100.0f);
+
 //            lookAt.rotate(0.01f, new Vector3f(0, 1, 0));
 
-
-            float cameraSpeed = 0.05f;
+            float mouseSensitivity = 0.0001f;
+            float cameraSpeed = 0.02f;
 
             if(glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-                cameraFront.add(cameraPos.mul(cameraSpeed));
+                cameraPos.add(new Vector3f(cameraFront).mul(cameraSpeed));
             if(glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-                cameraFront.sub(cameraPos.mul(cameraSpeed));
+                cameraPos.sub(new Vector3f(cameraFront).mul(cameraSpeed));
             if(glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-                cameraFront.add(cameraPos.cross(cameraUp).mul(cameraSpeed));
+                cameraPos.add(new Vector3f(cameraFront).cross(cameraUp).normalize().mul(cameraSpeed));
             if(glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-                cameraFront.sub(cameraPos.cross(cameraUp).mul(cameraSpeed));
+                cameraPos.sub(new Vector3f(cameraFront).cross(cameraUp).normalize().mul(cameraSpeed));
 
             if (pressed) {
-                glfwGetCursorPos(window, xPos, yPos);
-                double x = lastMousePos.x - xPos[0];
-                double y = lastMousePos.y - yPos[0];
-                double changedX = x / SCREEN_WIDTH * 2 * Math.PI;
-                double changedY = y / SCREEN_HEIGHT * 2 * Math.PI;
-                lastMousePos.x = (float) xPos[0];
-                lastMousePos.y = (float) yPos[0];
 
-                angleX += changedX;
-                angleY += changedY;
+                glfwGetCursorPos(window, xPos, yPos);
+
+                float xOffset = lastMousePos.x - (float) xPos[0];
+                float yOffset = lastMousePos.y - (float) yPos[0];
+
+                yaw -= xOffset * mouseSensitivity;
+                pitch += yOffset * mouseSensitivity;
+
+
+                if (pitch > (float) Math.toRadians(89.0f))
+                    pitch = (float) Math.toRadians(89.0f);
+                if (pitch < (float) Math.toRadians(-89.0f))
+                    pitch = (float) Math.toRadians(-89.0f);
             }
 
             // update camera
-            cameraPos.set(
-                    (float) (CAMERA_RADIUS * Math.sin(angleY) * Math.cos(angleX)),
-                    (float) (CAMERA_RADIUS * Math.cos(angleY)),
-                    (float) (CAMERA_RADIUS * Math.sin(angleY) * Math.sin(angleX))
+            cameraFront.set(
+                    (float) ( Math.cos(pitch) * Math.cos(yaw)),
+                    (float) ( Math.sin(pitch)),
+                    (float) ( Math.cos(pitch) * Math.sin(yaw))
             );
+            cameraFront.normalize();
 
-            camera.identity();
-            camera.lookAt(cameraPos, cameraFront, cameraUp);
 
+            view.identity();
+            view.lookAt(cameraPos, new Vector3f(cameraPos).add(cameraFront), cameraUp);
+            projection.identity();
+            projection.perspective((float) Math.toRadians(45.0f), SCREEN_WIDTH / SCREEN_HEIGHT, 0.1f, 100.0f);
             // Set the clear color
             glClearColor(.2f, .4f, .7f, .4f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // clear the framebuffer
@@ -355,7 +381,7 @@ public class SimpleCylinder {
             shader.use();
 
             shader.setMatrix("model", model);
-            shader.setMatrix("view", camera);
+            shader.setMatrix("view", view);
             shader.setMatrix("projection", projection);
 
 
@@ -366,17 +392,7 @@ public class SimpleCylinder {
 
             int offset = 0;
 
-            glDrawElements(GL_TRIANGLE_STRIP, stripIndicesCount * (segmentCount-1), GL_UNSIGNED_INT, 0);
-
-            offset += stripIndicesCount * (segmentCount);
-
-            glDrawElements(GL_TRIANGLE_FAN, fanIndicesCount, GL_UNSIGNED_INT, offset * 4);
-
-
-            offset += fanIndicesCount;
-
-            glDrawElements(GL_TRIANGLE_FAN, fanIndicesCount, GL_UNSIGNED_INT,offset * 4);
-
+            glDrawElements(GL_TRIANGLE_STRIP, terrain.getSize() , GL_UNSIGNED_INT, 0);
 
             glfwSwapBuffers(window); // swap the color buffers
 
@@ -390,59 +406,69 @@ public class SimpleCylinder {
         new SimpleCylinder().run();
     }
 
-    private float[] getCircleVertices(int sectorCount, float radius, float y) {
+//    private float[] getCircleVertices(int sectorCount, float radius, float y) {
+//
+//        float[] vertices = new float[6 * sectorCount];
+//
+//        for (int i = 0; i < sectorCount; i++) {
+//
+//            int index = i * 6;
+//
+//            float angle = (float) ((float)i / sectorCount * Math.PI * 2);
+//            float x = (float) Math.sin(angle);
+//            float z = (float) Math.cos(angle);
+//
+//            vertices[index] = radius * x;
+//            vertices[index + 1] = y;
+//            vertices[index + 2] = radius * z;
+//            vertices[index + 3] = x;
+//            vertices[index + 4] = 0;
+//            vertices[index + 5] = z;
+//        }
+//
+//
+//        return vertices;
+//    }
+//
+//    private int[] getFanIndices(int sectorCount, int centerIndex, int segmentIndex){
+//        int[] indices = new int[sectorCount + 2];
+//        indices[0] = centerIndex;
+//
+//        for (int i = 1; i <= sectorCount; i++) {
+//            indices[i] = segmentIndex + i - 1;
+//        }
+//
+//        indices[sectorCount + 1] = segmentIndex;
+//
+//        return indices;
+//    }
+//
+//
+//    private int[] getStripIndices(int sectorCount, int firstCircleIndex, int secondCircleIndex){
+//        int[] indices = new int[2 * sectorCount + 2];
+//
+//        for (int i = 0; i < sectorCount; i++) {
+//            int index = i * 2;
+//
+//            indices[index] = firstCircleIndex + i;
+//            indices[index+1] = secondCircleIndex + i;
+//        }
+//
+//        indices[2 * sectorCount] = firstCircleIndex;
+//        indices[2 * sectorCount + 1] = secondCircleIndex;
+//
+//
+//        return indices;
+//    }
 
-        float[] vertices = new float[6 * sectorCount];
+    private void storeDataInAttributeList(int attributeNumber, int coordinateSize,float[] data) {
+        int vboID = GL15.glGenBuffers();
 
-        for (int i = 0; i < sectorCount; i++) {
-
-            int index = i * 6;
-
-            float angle = (float) ((float)i / sectorCount * Math.PI * 2);
-            float x = (float) Math.sin(angle);
-            float z = (float) Math.cos(angle);
-
-            vertices[index] = radius * x;
-            vertices[index + 1] = y;
-            vertices[index + 2] = radius * z;
-            vertices[index + 3] = x;
-            vertices[index + 4] = 0;
-            vertices[index + 5] = z;
-        }
-
-
-        return vertices;
-    }
-
-    private int[] getFanIndices(int sectorCount, int centerIndex, int segmentIndex){
-        int[] indices = new int[sectorCount + 2];
-        indices[0] = centerIndex;
-
-        for (int i = 1; i <= sectorCount; i++) {
-            indices[i] = segmentIndex + i - 1;
-        }
-
-        indices[sectorCount + 1] = segmentIndex;
-
-        return indices;
-    }
-
-
-    private int[] getStripIndices(int sectorCount, int firstCircleIndex, int secondCircleIndex){
-        int[] indices = new int[2 * sectorCount + 2];
-
-        for (int i = 0; i < sectorCount; i++) {
-            int index = i * 2;
-
-            indices[index] = firstCircleIndex + i;
-            indices[index+1] = secondCircleIndex + i;
-        }
-
-        indices[2 * sectorCount] = firstCircleIndex;
-        indices[2 * sectorCount + 1] = secondCircleIndex;
-
-
-        return indices;
+        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vboID);
+        FloatBuffer buffer = storeDataInFloatBuffer(data);
+        GL15.glBufferData(GL15.GL_ARRAY_BUFFER, buffer, GL15.GL_STATIC_DRAW);
+        GL20.glVertexAttribPointer(attributeNumber,coordinateSize,GL11.GL_FLOAT,false,0,0);
+        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
     }
 
 }

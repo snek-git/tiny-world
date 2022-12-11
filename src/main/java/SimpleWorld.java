@@ -187,7 +187,6 @@ public class SimpleWorld {
         // glBindBuffer(GL_ARRAY_BUFFER, 0);
         shader.use();
 
-
         GLFW.glfwSetScrollCallback(window, new GLFWScrollCallback() {
             @Override public void invoke (long win, double dx, double dy) {
                 CAMERA_RADIUS += dy * 0.5f;
@@ -282,20 +281,6 @@ public class SimpleWorld {
         new SimpleWorld().run();
     }
 
-
-    private Surface generateIndexedTriangleStripPlane(int hVertices, int vVertices, float size){
-
-
-        return null;
-    }
-
-    private class Surface{
-
-        float coordinates[]; //array holding the vertex information.
-        int size;            // the generated coordinates array size.
-        int indexBuffer[];   // array holding the indices of the triangle strips
-        int indexCount;      // index array size
-    }
 
 
 
