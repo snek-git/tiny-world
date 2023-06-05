@@ -2,4 +2,4 @@
 
 Final Project for 2022 Fall Computer Graphics course
 
-this shit dont even work anymore lmao 
+this doesnt even work anymore lmao 
